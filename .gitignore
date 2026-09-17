@@ -1,0 +1,67 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ---- 虚拟环境（本项目不用，保留以防后续）----
+.venv/
+venv/
+env/
+
+# ---- 数据集与模型权重（保留目录占位，忽略内容）----
+data/*
+!data/.gitkeep
+models/*
+!models/.gitkeep
+
+# 常见权重/导出文件
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+*.onnx
+
+# ---- 测试与工具缓存 ----
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ---- 密钥与本地配置 ----
+.env
+.env.*
+configs/secrets*
+*.local
+
+# ---- 日志与临时文件 ----
+*.log
+tmp/
+temp/
+
+# ---- IDE ----
+.idea/
+.vscode/
+*.swp
+
+# ---- 系统文件 ----
+Thumbs.db
+.DS_Store
+
+# ---- 报告 / 测试 / 脚本（只 push 核心代码，不随仓库入库）----
+docs/
+tests/
+scripts/
+notebooks/
+
+# ---- 本地 Claude 配置 ----
+.claude/
+
+# ---- 临时截图与可视化产物 ----
+*.png
+*.jpg
+*.jpeg
