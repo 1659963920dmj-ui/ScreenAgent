@@ -153,7 +153,7 @@ def convert_action_sequence(actions: list[dict]) -> ConversionResult:
         if not isinstance(a, dict):
             return _fail("action is not a dict")
         atype = a.get("action_type")
-        if atype not in _KNOWN_TYPES:
+        if not isinstance(atype, str) or atype not in _KNOWN_TYPES:
             return _fail(f"unknown action_type {atype!r}")
 
         if atype == "PlanAction":
