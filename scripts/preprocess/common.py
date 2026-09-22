@@ -57,3 +57,39 @@ def parse_actions(text: str) -> ParseResult:
         note = "applied key-name unescape fix" if fixed else ""
         return ParseResult("ok", obj, note)
     return ParseResult("error", [], "no JSON candidate parsed")
+
+
+KEY_ALIASES = {
+    "control_l": "ctrl", "control_r": "ctrl", "control": "ctrl", "ctrl": "ctrl",
+    "shift_l": "shift", "shift_r": "shift",
+    "alt_l": "alt", "alt_r": "alt",
+    "super_l": "win", "super_r": "win", "super": "win", "win": "win", "cmd": "win",
+    "return": "enter", "enter": "enter",
+    "escape": "esc", "esc": "esc",
+    "backspace": "backspace",
+    "space": "space",
+    "tab": "tab",
+    "delete": "delete", "insert": "insert",
+    "home": "home", "end": "end",
+    "page_up": "pageup", "pageup": "pageup",
+    "page_down": "pagedown", "pagedown": "pagedown",
+    "up": "up", "down": "down", "left": "left", "right": "right",
+    "caps_lock": "capslock", "capslock": "capslock",
+}
+
+ALLOWED_KEYS = (
+    set(chr(c) for c in range(ord("a"), ord("z") + 1))
+    | set(str(i) for i in range(10))
+    | {f"f{i}" for i in range(1, 13)}
+    | {"ctrl", "alt", "shift", "win"}
+    | {"enter", "esc", "tab", "space", "backspace", "delete", "insert",
+       "home", "end", "pageup", "pagedown", "up", "down", "left", "right",
+       "capslock", "numlock", "printscreen", "scrolllock", "pause", "menu"}
+)
+
+
+def key_alias(keysym: str) -> str:
+    k = keysym.strip()
+    if not k:
+        return ""
+    return KEY_ALIASES.get(k.lower(), k.lower())
