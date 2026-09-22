@@ -10,6 +10,17 @@ from scripts.preprocess.convert_screenagent import Stats
 ALLOWED_OPS = {"CLICK", "TYPE", "SELECT"}
 
 
+def _op_value(act: dict):
+    """安全取 (op, value)：operation 缺失/null/非 dict/无 op 键四态统一归 (None, None)。
+
+    `operation` 为 truthy 非 dict（如 "CLICK"）时不做 `.get`，避免 AttributeError 逃逸契约（Ruling F16）。
+    """
+    op_obj = act.get("operation")
+    if not isinstance(op_obj, dict):
+        return None, None
+    return op_obj.get("op"), op_obj.get("value")
+
+
 def convert_mind2web(rows, out: Path, bad: Path) -> Stats:
     stats = Stats()
     samples, bads = [], []
@@ -41,20 +52,20 @@ def convert_mind2web(rows, out: Path, bad: Path) -> Stats:
             bads.append({"id": f"mind2web/{aid}", "status": "error",
                          "reason": "action is not a dict"})
             continue
-        ops = [(a.get("operation") or {}).get("op") for a in acts]
-        if not all(op in ALLOWED_OPS for op in ops):
-            bad_op = next(op for op in ops if op not in ALLOWED_OPS)
+        op_vals = [_op_value(a)[0] for a in acts]
+        if not all(op in ALLOWED_OPS for op in op_vals):
+            bad_op = next(op for op in op_vals if op not in ALLOWED_OPS)
             stats.bump("unsupported", f"op {bad_op!r} not in CLICK/TYPE/SELECT")
             bads.append({"id": f"mind2web/{aid}", "status": "unsupported",
                          "reason": f"op {bad_op!r} not in CLICK/TYPE/SELECT"})
             continue
         steps = []
         for rep, act in zip(reprs, acts):
-            op = act.get("operation") or {}
+            op, value = _op_value(act)
             steps.append({
                 "action_uid": act.get("action_uid"),
-                "op": op.get("op"),
-                "value": op.get("value"),
+                "op": op,
+                "value": value,
                 "repr": rep,
             })
         samples.append({
