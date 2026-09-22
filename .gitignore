@@ -55,7 +55,8 @@ Thumbs.db
 # ---- 报告 / 测试 / 脚本（只 push 核心代码，不随仓库入库）----
 docs/
 tests/
-scripts/
+scripts/*
+!scripts/preprocess/
 notebooks/
 
 # ---- 本地 Claude 配置 ----
