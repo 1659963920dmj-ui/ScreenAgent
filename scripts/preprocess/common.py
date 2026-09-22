@@ -268,6 +268,8 @@ def validate_coords(action: dict, w: int, h: int) -> bool:
         v = action.get(field)
         if v is None:
             continue
+        if isinstance(v, bool):
+            return False
         if not isinstance(v, int):
             return False
         if not (0 <= v < limit):
