@@ -204,7 +204,7 @@ def convert_action_sequence(actions: list[dict]) -> ConversionResult:
                 mouse_pos = end
             elif matype in ("scroll_up", "scroll_down"):
                 repeat = a.get("scroll_repeat", 1)
-                if not isinstance(repeat, int) or repeat <= 0:
+                if isinstance(repeat, bool) or not isinstance(repeat, int) or repeat <= 0:
                     return _fail(f"invalid scroll_repeat {repeat!r}")
                 amount = repeat if matype == "scroll_up" else -repeat
                 out.append({"type": "scroll", "scroll_amount": amount})
