@@ -6,6 +6,9 @@ from pathlib import Path
 from scripts.preprocess.common import SCHEMA_VERSION, write_jsonl
 from scripts.preprocess.convert_screenagent import Stats
 
+# spec §3.2：steps[].op 只能是这三个操作。
+ALLOWED_OPS = {"CLICK", "TYPE", "SELECT"}
+
 
 def convert_mind2web(rows, out: Path, bad: Path) -> Stats:
     stats = Stats()
@@ -19,8 +22,15 @@ def convert_mind2web(rows, out: Path, bad: Path) -> Stats:
             continue
         aid = r.get("annotation_id", "")
         task = r.get("confirmed_task", "")
+        if not isinstance(task, str):
+            task = ""
         reprs = r.get("action_reprs") or []
         acts = r.get("actions") or []
+        if not isinstance(reprs, list) or not isinstance(acts, list):
+            stats.bump("error", "action_reprs/actions is not a list")
+            bads.append({"id": f"mind2web/{aid}", "status": "error",
+                         "reason": "action_reprs/actions is not a list"})
+            continue
         if len(reprs) != len(acts):
             stats.bump("unsupported", "repr/actions length mismatch")
             bads.append({"id": f"mind2web/{aid}", "status": "unsupported",
@@ -30,6 +40,13 @@ def convert_mind2web(rows, out: Path, bad: Path) -> Stats:
             stats.bump("error", "action is not a dict")
             bads.append({"id": f"mind2web/{aid}", "status": "error",
                          "reason": "action is not a dict"})
+            continue
+        ops = [(a.get("operation") or {}).get("op") for a in acts]
+        if not all(op in ALLOWED_OPS for op in ops):
+            bad_op = next(op for op in ops if op not in ALLOWED_OPS)
+            stats.bump("unsupported", f"op {bad_op!r} not in CLICK/TYPE/SELECT")
+            bads.append({"id": f"mind2web/{aid}", "status": "unsupported",
+                         "reason": f"op {bad_op!r} not in CLICK/TYPE/SELECT"})
             continue
         steps = []
         for rep, act in zip(reprs, acts):
