@@ -58,7 +58,8 @@ def _convert_one(json_path: Path, session_id: str, image_root: Path, keep_prompt
     try:
         with json_path.open("r", encoding="utf-8") as f:
             d = json.load(f)
-    except (json.JSONDecodeError, OSError) as e:
+    except (json.JSONDecodeError, OSError, ValueError) as e:
+        # UnicodeDecodeError（非 UTF-8 字节）是 ValueError 而非 OSError
         record = {"id": f"screenagent/{session_id}/{json_path.stem}"}
         return _fail(record, "error", f"json read error: {e}")
 
@@ -66,7 +67,14 @@ def _convert_one(json_path: Path, session_id: str, image_root: Path, keep_prompt
     record = {"id": f"screenagent/{session_id}/{step_index}",
               "source": "screenagent", "session_id": session_id, "step_index": step_index}
 
-    pr = parse_actions(d.get("LLM_response_editer", ""))
+    if not isinstance(d, dict):
+        return _fail(record, "error", "json root is not an object")
+
+    raw = d.get("LLM_response_editer")
+    if not isinstance(raw, str):
+        return _fail(record, "error", "non-string LLM_response_editer")
+
+    pr = parse_actions(raw)
     if pr.status == "error":
         return _fail(record, "error", f"parse error: {pr.note}")
     if pr.status == "empty":
@@ -118,7 +126,8 @@ def _convert_one(json_path: Path, session_id: str, image_root: Path, keep_prompt
         "actions": conv.actions,
     }
     if keep_prompt:
-        sample["prompt"] = d.get("send_prompt", "")
+        p = d.get("send_prompt", "")
+        sample["prompt"] = p if isinstance(p, str) else ""
     return sample, None
 
 
