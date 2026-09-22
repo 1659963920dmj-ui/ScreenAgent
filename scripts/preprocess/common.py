@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import NamedTuple
 
 SCHEMA_VERSION = "1.0"
@@ -260,3 +261,23 @@ def convert_action_sequence(actions: list[dict]) -> ConversionResult:
     if not out:
         return ConversionResult("empty", [], "no converted actions")
     return ConversionResult("ok", out, "")
+
+
+def validate_coords(action: dict, w: int, h: int) -> bool:
+    for field, limit in (("x", w), ("y", h), ("x2", w), ("y2", h)):
+        v = action.get(field)
+        if v is None:
+            continue
+        if not isinstance(v, int):
+            return False
+        if not (0 <= v < limit):
+            return False
+    return True
+
+
+def write_jsonl(path, samples) -> None:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as f:
+        for s in samples:
+            f.write(json.dumps(s, ensure_ascii=False) + "\n")
