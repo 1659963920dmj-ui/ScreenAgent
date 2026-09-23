@@ -2,5 +2,6 @@
 
 from src.llm.api import APIVLMModel
 from src.llm.base import LLMConfig, LLMError, VLMModel
+from src.llm.local import LocalVLMModel
 
-__all__ = ["VLMModel", "APIVLMModel", "LLMConfig", "LLMError"]
+__all__ = ["VLMModel", "APIVLMModel", "LocalVLMModel", "LLMConfig", "LLMError"]
