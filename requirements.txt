@@ -29,6 +29,10 @@ paddlepaddle==3.3.1
 paddleocr==3.7.0
 easyocr==1.7.2
 
+# ---- 大模型调用接口（src/llm）----
+requests==2.34.2
+PyYAML==6.0.2
+
 # ---- Agent 框架 ----
 langchain==1.4.0
 langchain-community==0.4.2
