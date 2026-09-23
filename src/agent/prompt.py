@@ -6,6 +6,13 @@ LangChain 仅在本文件出现（封装边界，不泄漏到 agent.py）：用 
 
 from __future__ import annotations
 
+import json
+from typing import Any, Dict, List
+
+from langchain_core.prompts import PromptTemplate
+
+from src.agent.history import summarize_history
+from src.agent.step import AgentStep
 from src.control.keys import ALLOWED_KEYS
 
 
@@ -41,3 +48,73 @@ def build_schema() -> str:
         "坐标约定：屏幕绝对像素坐标（整数），须落在有效坐标范围内。\n"
         f"按键白名单（press.key / hotkey.keys 取值于此）：{allowed}\n"
     )
+
+
+_PROMPT_TEMPLATE = PromptTemplate(
+    template=(
+        "{system}\n\n"
+        "## 用户任务\n{instruction}\n\n"
+        "## 当前屏幕状态\n{screen_state}\n\n"
+        "## 历史动作摘要\n{history}"
+    ),
+    input_variables=["system", "instruction", "screen_state", "history"],
+)
+
+
+def _build_system() -> str:
+    return (
+        "你是一个桌面 GUI 智能体：根据用户指令、当前屏幕状态与历史动作，"
+        "决定下一步操作，只输出一个 JSON 对象。\n\n"
+        + build_schema()
+    )
+
+
+def _format_screen_state(
+    screen_state: List[Dict[str, Any]], bounds: tuple[int, int, int, int]
+) -> str:
+    left, top, width, height = bounds
+    lines = [
+        f"截图尺寸: {width}x{height} @ ({left}, {top})",
+        f"有效坐标范围: x ∈ [{left}, {left + width}), y ∈ [{top}, {top + height})",
+        "坐标: 屏幕绝对坐标（图像内坐标 + 截图原点偏移；请直接输出屏幕绝对坐标）",
+    ]
+    for d in screen_state:
+        lines.append(
+            f"[{d['id']}] {d['type']:<6} \"{d['label']}\" @ "
+            f"({d['center'][0]}, {d['center'][1]})"
+        )
+    return "\n".join(lines)
+
+
+def _format_history(history: List[AgentStep], max_history_steps: int) -> str:
+    return json.dumps(
+        summarize_history(history, max_steps=max_history_steps),
+        ensure_ascii=False,
+    )
+
+
+def render_prompt(
+    instruction: str,
+    screen_state: list[dict],
+    history: list[AgentStep],
+    bounds: tuple[int, int, int, int],
+    max_history_steps: int = 5,
+) -> str:
+    """渲染完整 prompt 文本。
+
+    bounds = (left, top, width, height)：与 parse_step 传入的同一份截图边界，
+    用于在 prompt 里写出截图尺寸、原点与有效坐标范围（区域截图下模型
+    需要它把图像内坐标换算成屏幕绝对坐标）。
+
+    screen_state（elements_to_dicts 产物）内部序列化为编号文本，坐标为
+    屏幕绝对坐标，不二次偏移；history 内部经 summarize_history(history,
+    max_steps=max_history_steps) 压缩为 JSON 摘要。
+    """
+    return _PROMPT_TEMPLATE.invoke(
+        {
+            "system": _build_system(),
+            "instruction": instruction,
+            "screen_state": _format_screen_state(screen_state, bounds),
+            "history": _format_history(history, max_history_steps),
+        }
+    ).to_string()
