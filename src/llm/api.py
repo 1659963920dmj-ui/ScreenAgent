@@ -86,7 +86,7 @@ class APIVLMModel(VLMModel):
             "model": self._config.model,
             "messages": self._build_messages(prompt, image_data_url),
             "max_tokens": self._config.max_tokens,
-            "temperature": self._config.temperature,
+            "temperature": float(self._config.temperature),
         }
 
     def _build_messages(self, prompt: str, image_data_url: str) -> list[dict]:
@@ -128,7 +128,7 @@ class APIVLMModel(VLMModel):
             raise LLMError(f"HTTP {response.status_code}: {exc}") from exc
         try:
             return response.json()
-        except json.JSONDecodeError as exc:
+        except (json.JSONDecodeError, requests.exceptions.JSONDecodeError) as exc:
             raise LLMError("响应体不是合法 JSON") from exc
 
     # —— 响应解析（§6.3 / §6.5） ——

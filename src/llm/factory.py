@@ -37,5 +37,5 @@ def load_config(path: Union[str, Path]) -> LLMConfig:
     known = {f.name for f in fields(LLMConfig)}
     unknown = set(data) - known
     if unknown:
-        raise ValueError(f"未知配置字段: {sorted(unknown)}")
+        raise ValueError(f"未知配置字段: {sorted(map(str, unknown))}")
     return LLMConfig(**data)

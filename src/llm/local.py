@@ -14,5 +14,6 @@ class LocalVLMModel(VLMModel):
         self._config = config
 
     def generate(self, prompt: str, image: np.ndarray) -> str:
+        """本期占位：先公共校验输入，通过后抛 NotImplementedError（第 5 周实现真实推理）。"""
         self._validate_input(prompt, image)  # 先公共校验：非法输入 → ValueError
         raise NotImplementedError("本地部署后端将在第 5 周（微调 / 量化）实现")
