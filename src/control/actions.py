@@ -7,9 +7,13 @@ Action 可校验、可日志、可序列化、可单元测试，为第 4 周 Age
 
 from __future__ import annotations
 
+import math
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional
+
+from .keys import ALLOWED_KEYS
 
 
 class ActionType(str, Enum):
@@ -49,6 +53,7 @@ class Action:
     keys: Optional[List[str]] = None
     scroll_amount: Optional[int] = None
     duration: float = 0.2  # 移动 / 拖拽耗时（秒）
+    target_id: Optional[int] = None  # 模型指代的 screen_state 元素编号，仅日志/调试
 
     def validate(self) -> None:
         """校验动作参数的类型与完整性，不合法时抛出 ValueError。
@@ -61,14 +66,23 @@ class Action:
                 f"动作 type 必须是 ActionType，收到 {type(self.type).__name__}"
             )
 
-        # 坐标字段须为整数
+        # 坐标字段须为真整数（拒绝 bool——bool 是 int 子类但非合法坐标）
         for name in ("x", "y", "x2", "y2"):
             val = getattr(self, name)
-            if val is not None and not isinstance(val, int):
+            if val is not None and (isinstance(val, bool) or not isinstance(val, int)):
                 raise ValueError(
                     f"{self.type.value} 动作的 {name} 必须是 int，"
                     f"收到 {type(val).__name__}"
                 )
+
+        # duration 须为有限非负数值
+        if isinstance(self.duration, bool) or not isinstance(self.duration, (int, float)):
+            raise ValueError(
+                f"{self.type.value} 动作的 duration 必须是数值，"
+                f"收到 {type(self.duration).__name__}"
+            )
+        if not math.isfinite(self.duration) or self.duration < 0:
+            raise ValueError(f"{self.type.value} 动作的 duration 必须有限且非负")
 
         t = self.type
         if t in (
@@ -104,6 +118,8 @@ class Action:
                 raise ValueError(
                     f"PRESS 动作的 key 必须是 str，收到 {type(self.key).__name__}"
                 )
+            if self.key not in ALLOWED_KEYS:
+                raise ValueError(f"PRESS 动作的 key {self.key!r} 不在键名白名单")
         elif t == ActionType.HOTKEY:
             if (
                 not isinstance(self.keys, list)
@@ -111,3 +127,6 @@ class Action:
                 or not all(isinstance(k, str) for k in self.keys)
             ):
                 raise ValueError("HOTKEY 动作需要非空字符串列表 keys")
+            for k in self.keys:
+                if k not in ALLOWED_KEYS:
+                    raise ValueError(f"HOTKEY 动作的 key {k!r} 不在键名白名单")
