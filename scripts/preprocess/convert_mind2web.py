@@ -75,6 +75,9 @@ def convert_mind2web(rows, out: Path, bad: Path) -> Stats:
             "task": task,
             "steps": steps,
         })
+        # Mind2Web 无坐标无截图，属「规划」样本（spec §2.1「用于任务规划」），
+        # 计入 plan 使 manifest 的 total 可被分类解释（与 ScreenAgent 的 act/plan 对齐）。
+        stats.bump("plan")
     write_jsonl(out, samples)
     write_jsonl(bad, bads)
     return stats
